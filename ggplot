@@ -2,6 +2,7 @@ library(tidyverse)
 ggplot2::mpg
 mpg
 #ggplot2 extension packages延展包！！: http://www.ggplot2-exts.org/gallery/
+#aesthetic的意思是plot里面所有可以visual的事物，例如color,shape,point,linetype.....就是everything可以在plot里面看到的
 # dataset:mpg was used, and + the second layer geom_point which will create a scatterplot
 # mapping+ aes, these two are used to specify which  variables we will use.
 ggplot(data=mpg)+
@@ -139,6 +140,35 @@ ggplot(data=mpg,mapping = aes(x=displ,y=hwy))+
 ggplot2::diamonds
 ggplot(data=diamonds,mapping = aes(x=cut))+
   geom_bar()
+#调整颜色
+ggplot(data=diamonds,mapping = aes(x=cut,color=cut))+
+  geom_bar()
+
+ggplot(data=diamonds,mapping = aes(x=cut,fill=cut))+
+  geom_bar()
+ggplot(data=diamonds,mapping = aes(x=cut,fill=clarity))+
+  geom_bar()
+
+#调整position adjustments
+#default: "stacking", and other three options:"identity","dodge","fill"
+#identity will place each object exactly where it falls in the context of the graph.
+#position="identity"可能会导致图表出现overlap的情况。(这里没有而已)，因此用alpha来调整颜色看清overlap的情况
+ggplot(data=diamonds,mapping = aes(x=cut,fill=clarity))+
+  geom_bar(position="identity")
+ggplot(data=diamonds,mapping = aes(x=cut,fill=clarity))+
+  geom_bar(fill=NA,position="identity")
+ggplot(data=diamonds,mapping = aes(x=cut,fill=clarity))+
+  geom_bar(alpha=1/6,position="identity")
+#identity最好用于2D geoms,如geom_point
+ggplot(data = mpg,mapping = aes(x=displ,y=hwy,color=class))+
+  geom_point(position="identity")
+
+#fill填充，works like stacking, but makes each set of stacked bars the same height
+ggplot(data=diamonds,mapping = aes(x=cut,fill=clarity))+
+  geom_bar(position="fill")
+#dodge躲闪:places overlapping objects directly beside one another. Easier to compare infividual values
+ggplot(data=diamonds,mapping = aes(x=cut,fill=clarity))+
+  geom_bar(position="dodge")
 
 #？用来检查默认数值,从这里我们可以知道geom_bar的默认default输出是stat_count()
 ?geom_bar
@@ -151,4 +181,61 @@ ggplot(data=diamonds,mapping=aes(x=cut))+
 ggplot(data=diamonds,mapping = aes(x=cut))+
   geom_bar()
 
+#change the default to another value (override the default value)
+#赋予demo值以函数 demo <- X，后以bar chart的形式呈现
+#stat="identity"可以赋予y数值
+demo <- tribble(
+  ~a,~b,
+  "bar_1",20,
+  "bar_2",30,
+  "bar_3",40)
+ggplot(data=demo)+
+  geom_bar(mapping = aes(x=a,y=b),stat="identity")
+
+
+#可以改变geom_bar的default from stat_count to prop (prop也是默认选项中的一种)(computed variables: count,prop)
+# group=1,2,3,.... 可以帮助在整体中进行比例分配。
+#geom_bar默认情况下group是按照每个x（这里为fair组，good组..）进行prop分配的。
+#如果不设置group=1,2,3,...的话，则默认的返回输出是fair组中fair的prop是100%，因此这里我们需要给group设置任意数值。
+ggplot(data=diamonds)+
+  geom_bar(mapping=aes(x=cut,y=..prop..))
+
+ggplot(data=diamonds)+
+  geom_bar(mapping=aes(x=cut,y=..prop..,group=1))
+
+#赋予每一个x一个y值，可以用stat_summary
+#ggplot+stat_summary 只有一个点,fun.y=mean/median/min/max,必须加上geom=point
+
+ggplot(data=diamonds,mapping = aes(x=cut,y=depth))+
+  stat_summary(geom="point",fun.y = mean)
+ggplot(data=diamonds,mapping = aes(x=cut,y=depth))+
+  stat_summary(geom="point",fun.y = min)
+ggplot(data=diamonds,mapping = aes(x=cut,y=depth))+
+  stat_summary(geom="point",fun.y = median)
+
+# fun.ymin=min and fun.ymax=max会把范围标定出来，显示最小值到最大值的范围，以线段的形式
+ggplot(data=diamonds)+
+  stat_summary(mapping=aes(x=cut,y=depth),
+               fun.ymin = min,
+               fun.ymax = max,
+               fun.y = median)
+
+# +geom_point可以把每个点都标定出来。geom=pointrange会把范围以线段形式标定，geom=point则无
+#geom_point + stat_summary 默认geom=pointrange，因此可以不用这一行。
+ggplot(data=diamonds,mapping = aes(x=cut,y=depth))+
+  geom_point()+
+  stat_summary(geom="pointrange", fun.ymin=min,fun.ymax=max,fun.y = mean,color="blue",size=1)
+
+ggplot(data=diamonds,mapping = aes(x=cut,y=depth))+
+  geom_point()+
+  stat_summary(geom="point",fun.ymin=min,fun.ymax=max,fun.y = median,color="blue",size=1)
+
 #
+?stat_bin
+
+#随便测试
+#stat_bin() must not be used with a y aesthetic.
+#`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+#StatBin requires a continuous x variable: the x variable is discrete.
+ggplot(data=diamonds,mapping = aes(x=depth))+
+stat_bin()
