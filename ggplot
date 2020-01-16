@@ -170,6 +170,17 @@ ggplot(data=diamonds,mapping = aes(x=cut,fill=clarity))+
 ggplot(data=diamonds,mapping = aes(x=cut,fill=clarity))+
   geom_bar(position="dodge")
 
+#jitter:it is a way to avoid overplotting
+#因为geom_point中的point are rounded(四舍五入) so many points overlap each other，这叫Overplotting
+#jitter会添加随机的点random noise来解决Overplotting的问题，使不同的点彼此分开
+#while it makes your graph less accurate at small scales, it makes your graph more revealing at large scales.
+ggplot(data=mpg,mapping=aes(x=displ,y=hwy,color=class))+
+  geom_point()
+
+ggplot(data=mpg,mapping = aes(x=displ,y=hwy,color=class))+
+  geom_point(position="jitter")
+
+
 #？用来检查默认数值,从这里我们可以知道geom_bar的默认default输出是stat_count()
 ?geom_bar
 ?geom_point
@@ -239,3 +250,65 @@ ggplot(data=diamonds,mapping = aes(x=cut,y=depth))+
 #StatBin requires a continuous x variable: the x variable is discrete.
 ggplot(data=diamonds,mapping = aes(x=depth))+
 stat_bin()
+
+#coordinate systems坐标系，cartesian coordinate system(直角坐标系)
+#coord_flip() switches x- and y-axes
+#可以解决label太长的问题..例如x轴上字母太多了可能会overlap
+ggplot(data=mpg,mapping = aes(x=class,y=hwy))+
+  geom_boxplot()
+ggplot(data=mpg,mapping = aes(x=class,y=hwy))+
+  geom_boxplot()+
+  coord_flip()
+ggplot(data=mpg,mapping = aes(x=class,y=hwy))+
+  geom_point(position = "jitter")+
+  coord_flip()
+
+#coord_quickmap set the aspect ratio(设置长宽比),调整长宽设置
+install.packages("maps")
+#
+nz<-map_data("nz")
+ggplot(nz,aes(x=long,y=lat,group=group))+
+  geom_polygon(fill="white",color="black")
+#
+ggplot(nz,aes(x=long,y=lat,group=group))+
+  geom_polygon(fill="white",color="black")+
+  coord_quickmap()
+#coord_map使用mapproj包定义的任何投影将大约球形的地球部分投影到平坦的2D平面上。 
+#coord_quickmap是一个快速近似值，它确实保留了直线。 它最适合靠近赤道的较小区域。
+install.packages("mapproj")
+ggplot(nz,aes(x=long,y=lat,group=group))+
+  geom_polygon(fill="white",color="black")+
+  coord_map()
+
+#coord_polar()用来设置极坐标polar coordinates
+#theme(aspect.ratio)设置长宽比，labs设置label，title
+ggplot(data=diamonds)+
+  geom_bar(mapping = aes(x=cut,fill=cut),show.legend = FALSE,width = 1)+
+  theme(aspect.ratio = 1)+
+  labs(x=NULL,y=NULL)+
+  coord_polar()
+
+# add straight lines to a plot: horizontal,vertical and regression lines
+#geom_aline:add a regreesion line
+#geom_hline:add a horizontal line
+#geom_vline:add a vertical line
+
+#1.hline
+ggplot(data = mtcars,aes(x=wt,y=mpg))+
+  geom_point()+
+  geom_hline(yintercept = 20,color="red",linetype="dashed",size=1)
+#2.vline
+ggplot(data = mtcars,aes(x=wt,y=mpg))+
+  geom_point()+
+  geom_vline(xintercept = 3,color="red",linetype="dotted",size=1)
+#3.abline
+#geom_abline default: intercept=0,slope=1
+
+reg<-lm(mpg ~ wt, data = mtcars)
+reg
+ggplot(reg)
+
+ggplot(data=mpg,mapping = aes(x=cty,y=hwy))+
+  geom_point()+
+  geom_abline()
+  coord_fixed()
