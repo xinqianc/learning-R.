@@ -1,0 +1,134 @@
+# data transformation with dplyr数据转换
+#exp dataset: nycflights13
+#dplyr overwrite覆盖 some functions,if wanting to use them, type full name: stats::filter()
+library(tidyverse)
+library(nycflights13)
+nycflights13::flights
+
+# open the dataset
+view(flights)
+
+# check the type of the dataset
+# tibble(tbl) is a kind of data frame
+class(flights)
+
+# letter abbreviations
+#int-integer,dbl-doubles,or real numbers, chr-character vectors or strings(字符向量或字符串)
+#lgl-vectors that contain only TRUE or FALSE,fctr-factors,date-dates,dttm-a date+a time
+#字符串或串(String)是由数字、字母、下划线组成的一串字符
+
+
+#learn filter(),arrange(),select(),mutate(),summarize()
+#这些function有共同之处。
+#FUNCTION(argument1=a data frame, argument2=variable names of the data frame)
+
+#filter rows with filter() 用过滤器过滤掉行，通过数值筛选
+filter1 <- filter(flights,month==1,day==1)
+
+#standard suite:  >,>=,<,<=,!=(not equal),==(equal)
+#关于浮点数floating-point numbers
+#sqrt是平方根，根号2*2=2其实是近似数来着，而不是准确的数学意义上的数字，所以用near而非==
+#同理，1/49 * 49也是一样
+sqrt(2)^2 ==2
+near(sqrt(2)^2,2)
+
+# &=and, |=or, !=not
+#找到在Nov or Dec 离开的飞机
+#not (filter(flights,month==11|12))
+(filter(flights,month==11|month==12))
+# %in%表示select every row where x is one of the values in y
+(filter(flights,month %in% c(11,12)))
+
+# De Morgan's law
+# !(x & y)= !x | !y (翻译：not(x and y) is not x or not y
+# !(x | y)= !x & !y (翻译：not (x or y) is not x and not y
+
+#例子：find flights that weren't delayed (on arrival or departure) by more than 2 hours
+filter(flights,!(arr_delay > 120 | dep_delay > 120))
+filter(flights,! arr_delay >120 & ! dep_delay > 120)
+filter(flights,arr_delay <= 120, dep_delay <= 120)
+filter(flights,arr_delay <=120 & dep_delay <= 120)
+
+# filter()只会包含TRUE行，FALSE和NA都会被排除.需要特别说明来包含NA行
+
+
+# missing values or NAs(not availables, unknown value)
+#any operation involving an unknown value will also be unknown
+#例子
+NA+5
+NA<5
+NA/2
+#is.na() to check if a value is missing
+is.na(5)
+is.na(NA)
+
+#若要在filter()中包含NA行，则用is.na()
+miss_value <- tibble(x=c(1,2,3,NA))
+filter(miss_value,x>1)
+filter(miss_value,is.na(x) | x>1)
+
+#arrange rows with arrange(),改变行的顺序
+#当提供两个column的时候，优先第一个column的进行排布
+#当按照数值排布的时候,NA是放在末尾的
+arr1 <- tribble(
+  ~a,~b,
+  "bar_1",30,
+  "bar_4",20,
+  "bar_3",40,
+  "bar_5",10,
+  "bar_2",NA,)
+(arr <- arrange(arr1,b))
+(arr <- arrange(arr1,a))
+(arr <- arrange(arr1,a,b))
+(arr <- arrange(arr1,desc(is.na(b))))
+arrange(flights,year,month,day)
+
+# desc() to reorder by a column in descending order降序排列:从高到低
+arrange(arr1,desc(a))
+
+#select columns with select()选择我们所需要的列
+#选择特定行
+select(flights,year,month,day)
+#选择连续的特定行 X:Y(从X到Y,包括XY)
+select(flights,year:day)
+#选择除了X到Y之外的行 -(X:Y)
+select(flights,-(year:day))
+#select所包含的有用函数
+#starts_with,ends_with,contains,matches,num_range,tail_num,everything,one_of
+select(flights,starts_with("arr"))
+select(flights,matches("t"))
+select(flights,tail_num= tailnum)
+#(.)\\1用来寻找repeated characters
+select(flights,matches("(.)\\1"))
+#everything()用来把需要的列调到开头去
+select(flights,month,day,everything())
+#num_range感觉有点鸡肋,必须要开头是一样的才能选择，例如这里开头是a的...
+arr2 <- tribble(
+  ~a1,~b,~a2,~ba5,
+  "bar_1",30,1,1,
+  "bar_4",20,2,3,
+  "bar_3",40,3,5,
+  "bar_5",10,4,7,
+  "bar_2",NA,5,9)
+select(arr2,num_range("a",1:5))
+# one_of好像没什么作用..很鸡肋的样子，可能在叠加function的时候可以起到不混淆指令的作用?
+select(flights,one_of("year","month","arr_delay"))
+select(flights,year,month,arr_delay)
+#和c()一起混用，还有这样的作用，只是为了easiler to type...可能对简化程序有好处
+vars <- c("year", "month", "day", "dep_delay", "arr_delay")
+select(flights, one_of(vars))
+#也可以不用one_of
+select(flights,vars)
+#如果flights中有同名的column叫vars,用!!!来区分(则不会误会成flights中的vars列)
+select(flights,!!!vars)
+
+#rename()用来更改名字，Y=X Y是改名后,X是原名
+rename(flights,years=year)
+
+
+#add new variables with mutate()添加新列(Laura-tidyverse中学过)
+#mutate()它是在表格最末尾添加新列
+mutate1 <- select(flights,year:day,ends_with("delay"),distance,air_time)
+mutate2 <- mutate(mutate1, gain=arr_delay - dep_delay,speed = distance/air_time * 60)
+#transmute：只保留新生成的列
+mutate3 <- transmute(mutate1,gain=arr_delay-dep_delay,speed=distance/air_time)
